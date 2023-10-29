@@ -23,9 +23,11 @@ func Test_Close(t *testing.T) {
 	client.AddHandler(types.GatewayEventReady, func(e *types.ReadyEventData) {
 		fmt.Printf("%#v", e)
 	})
+
 	go func() {
 		handleErr(client.Connect())
 	}()
+
 	time.Sleep(10 * time.Second)
 	client.Close()
 }

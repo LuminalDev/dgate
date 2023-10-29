@@ -261,11 +261,14 @@ func (gateway *Gateway) sendMessage(payload []byte) error {
 }
 
 func (gateway *Gateway) readMessage() ([]byte, error) {
+	if gateway.Connection == nil {
+		return nil, errors.New("gateway connection is already closed")
+	}
+
 	_, msg, err := gateway.Connection.ReadMessage()
 
 	if err != nil {
-		var closeError *websocket.CloseError
-		errors.As(err, &closeError)
+		closeError := err.(*websocket.CloseError)
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
@@ -275,10 +278,14 @@ func (gateway *Gateway) readMessage() ([]byte, error) {
 			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is re-connectable.
 					go gateway.reconnect()
-				}
+				} else {
+					gateway.Close()
 
-				return nil, fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
+					return nil, fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
+				}
 			} else {
+				gateway.Close()
+
 				return nil, err
 			}
 		}
@@ -364,10 +371,13 @@ func (gateway *Gateway) startHandler() {
 
 func (gateway *Gateway) Close() {
 	gateway.CloseChan <- struct{}{}
+
 	err := gateway.Connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "going away"), time.Now().Add(time.Second*10))
+
 	if err != nil {
 		if gateway.Connection != nil {
 			gateway.Connection.Close()
+			gateway.Connection = nil
 		}
 	}
 }
