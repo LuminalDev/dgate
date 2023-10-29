@@ -1,11 +1,11 @@
 package discord
 
 import (
+	"dgate/types"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/fasthttp/websocket"
-	"github.com/switchupcb/dasgo/dasgo"
 	"net/http"
 	"time"
 )
@@ -64,12 +64,12 @@ func (g *Gateway) hello() error {
 	if err != nil {
 		return err
 	}
-	var resp Hello
+	var resp types.HelloEvent
 	if err = json.Unmarshal(msg, &resp); err != nil {
 		return err
 	}
-	if resp.Op != dasgo.FlagGatewayOpcodeHello {
-		return fmt.Errorf("unexpected opcode, expected %d, got %d", dasgo.FlagGatewayOpcodeHello, resp.Op)
+	if resp.Op != types.OpcodeHello {
+		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeHello, resp.Op)
 	}
 	g.heartbeatInterval = time.Duration(resp.D.HeartbeatInterval)
 	go g.heartbeatSender()
@@ -77,9 +77,9 @@ func (g *Gateway) hello() error {
 }
 
 func (g *Gateway) identify() error {
-	payload, err := json.Marshal(Resume{
-		Op: dasgo.FlagGatewayOpcodeResume,
-		D: ResumeData{
+	payload, err := json.Marshal(types.ResumePayload{
+		Op: types.OpcodeResume,
+		D: types.ResumePayloadData{
 			Token:     g.Selfbot.Token,
 			SessionID: g.SessionID,
 			Seq:       g.LastSeq,
@@ -94,12 +94,12 @@ func (g *Gateway) identify() error {
 			return err
 		}
 	} else {
-		payload, err := json.Marshal(Identify{
-			Op: dasgo.FlagGatewayOpcodeIdentify,
-			D: IdentifyData{
+		payload, err := json.Marshal(types.IdentifyPayload{
+			Op: types.OpcodeIdentify,
+			D: types.IdentifyPayloadData{
 				Token:        g.Selfbot.Token,
 				Capabilities: CAPABILITIES,
-				Properties: SuperProperties{
+				Properties: types.SuperProperties{
 					OS:                     OS,
 					Browser:                BROWSER,
 					Device:                 DEVICE,
@@ -112,18 +112,18 @@ func (g *Gateway) identify() error {
 					ReferrerCurrent:        "",
 					ReferringDomainCurrent: "",
 					ReleaseChannel:         "stable",
-					ClientBuildNumber:      BUILD_NUMBER,
+					ClientBuildNumber:      clientBuildNumber,
 					ClientEventSource:      nil,
 				},
-				Presence: Presence{
+				Presence: types.Presence{
 					Status:     STATUS,
 					Since:      0,
 					Activities: nil,
 					Afk:        false,
 				},
 				Compress: false,
-				ClientState: ClientState{
-					GuildVersions:            GuildVersions{},
+				ClientState: types.ClientState{
+					GuildVersions:            types.GuildVersions{},
 					HighestLastMessageID:     "0",
 					ReadStateVersion:         0,
 					UserGuildSettingsVersion: -1,
@@ -149,18 +149,18 @@ func (g *Gateway) ready() error {
 	if err != nil {
 		return err
 	}
-	var event DefaultEvent
+	var event types.DefaultEvent
 	err = json.Unmarshal(msg, &event)
 	if err != nil {
 		return err
 	}
-	if event.Op == dasgo.FlagGatewayOpcodeInvalidSession {
+	if event.Op == types.OpcodeInvalidSession {
 		<-g.CloseChan
 		return g.reconnect()
-	} else if event.Op != dasgo.FlagGatewayOpcodeDispatch {
-		return fmt.Errorf("unexpected opcode, expected %d, got %d", dasgo.FlagGatewayOpcodeHello, event.Op)
+	} else if event.Op != types.OpcodeDispatch {
+		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeDispatch, event.Op)
 	}
-	var ready Ready
+	var ready types.ReadyEvent
 	if err = json.Unmarshal(msg, &ready); err != nil {
 		return err
 	}
@@ -172,6 +172,7 @@ func (g *Gateway) ready() error {
 	}
 	return nil
 }
+
 func (g *Gateway) canReconnect() bool {
 	return g.SessionID != "" && g.LastSeq != 0 && g.GatewayURL != ""
 }
@@ -194,8 +195,8 @@ func (g *Gateway) heartbeatSender() {
 }
 
 func (g *Gateway) sendHeartbeat() error {
-	payload, err := json.Marshal(DefaultEvent{
-		Op: dasgo.FlagGatewayOpcodeHeartbeat,
+	payload, err := json.Marshal(types.DefaultEvent{
+		Op: types.OpcodeHeartbeat,
 	})
 	if err != nil {
 		return err
@@ -215,7 +216,7 @@ func (g *Gateway) sendMessage(payload []byte) error {
 			go g.reset()
 			return err
 		default:
-			if closeEvent, ok := dasgo.GatewayCloseEventCodes[closeError.Code]; ok {
+			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is reconnectable.
 					go g.reconnect()
 				}
@@ -239,7 +240,7 @@ func (g *Gateway) readMessage() ([]byte, error) {
 			go g.reset()
 			return nil, err
 		default:
-			if closeEvent, ok := dasgo.GatewayCloseEventCodes[closeError.Code]; ok {
+			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is reconnectable.
 					go g.reconnect()
 				}
@@ -273,15 +274,15 @@ func (g *Gateway) startHandler() {
 			if err != nil {
 				return
 			}
-			var def DefaultEvent
+			var def types.DefaultEvent
 			if err = json.Unmarshal(msg, &def); err != nil {
 				return
 			}
 			switch def.Op {
-			case dasgo.FlagGatewayOpcodeDispatch:
+			case types.OpcodeDispatch:
 				switch def.T {
-				case dasgo.FlagGatewayEventNameMessageCreate:
-					var data Message
+				case types.EventNameMessageCreate:
+					var data types.MessageEvent
 					err := json.Unmarshal(msg, &data)
 					if err != nil {
 						continue

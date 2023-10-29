@@ -1,9 +1,8 @@
 package dgate
 
 import (
-	"dgate/discord"
+	"dgate/types"
 	"fmt"
-	"github.com/switchupcb/dasgo/dasgo"
 	"os"
 	"testing"
 )
@@ -18,10 +17,10 @@ func Test_Main(t *testing.T) {
 	token, err := os.ReadFile("test_token")
 	handleErr(err)
 	c := NewClient(string(token))
-	c.AddHandler(dasgo.FlagGatewayEventNameReady, func(e *discord.ReadyData) {
+	c.AddHandler(types.EventNameReady, func(e *types.ReadyEventData) {
 		fmt.Println(e)
 	})
-	c.AddHandler(dasgo.FlagGatewayEventNameMessageCreate, func(e *discord.MessageData) {
+	c.AddHandler(types.EventNameMessageCreate, func(e *types.MessageEventData) {
 		fmt.Println(e)
 	})
 	handleErr(c.Connect())

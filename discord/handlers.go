@@ -1,14 +1,14 @@
 package discord
 
 import (
+	"dgate/types"
 	"fmt"
-	"github.com/switchupcb/dasgo/dasgo"
 	"sync"
 )
 
 type Handlers struct {
-	OnReady         []func(*ReadyData)
-	OnMessageCreate []func(data *MessageData)
+	OnReady         []func(data *types.ReadyEventData)
+	OnMessageCreate []func(data *types.MessageEventData)
 	mutex           sync.Mutex
 }
 
@@ -17,14 +17,14 @@ func (handlers *Handlers) Add(event string, function any) error {
 	defer handlers.mutex.Unlock()
 
 	switch event {
-	case dasgo.FlagGatewayEventNameReady:
-		if function, ok := function.(func(*ReadyData)); ok {
+	case types.EventNameReady:
+		if function, ok := function.(func(data *types.ReadyEventData)); ok {
 			handlers.OnReady = append(handlers.OnReady, function)
 		} else {
 			return fmt.Errorf("wrong function signature")
 		}
-	case dasgo.FlagGatewayEventNameMessageCreate:
-		if function, ok := function.(func(data *MessageData)); ok {
+	case types.EventNameMessageCreate:
+		if function, ok := function.(func(data *types.MessageEventData)); ok {
 			handlers.OnMessageCreate = append(handlers.OnMessageCreate, function)
 		} else {
 			return fmt.Errorf("wrong function signature")
