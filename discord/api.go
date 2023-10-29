@@ -1,12 +1,14 @@
 package discord
 
 import (
-	"github.com/valyala/fasthttp"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 var (
 	clientBuildNumber = mustGetLatestBuild()
+	clientLocale      = mustGetLocale()
 	requestClient     = fasthttp.Client{
 		ReadBufferSize:                8192,
 		ReadTimeout:                   time.Second * 5,
