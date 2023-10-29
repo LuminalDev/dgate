@@ -1,9 +1,9 @@
 package types
 
 const (
-	ReadyEventHandler         = "READY"
-	MessageCreateEventHandler = "MESSAGE_CREATE"
-	MessageUpdateEventHandler = "MESSAGE_UPDATE"
-	ReconnectEventHandler     = "RECONNECT"
-	InvalidatedEventHandler   = "INVALIDATED"
+	GatewayEventReady         = "READY"
+	GatewayEventMessageCreate = "MESSAGE_CREATE"
+	GatewayEventMessageUpdate = "MESSAGE_UPDATE"
+	GatewayEventReconnect     = "RECONNECT"
+	GatewayEventInvalidated   = "INVALIDATED"
 )

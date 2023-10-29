@@ -23,31 +23,31 @@ func (handlers *Handlers) Add(event string, function any) error {
 	failed := false
 
 	switch event {
-	case types.ReadyEventHandler:
+	case types.GatewayEventReady:
 		if function, ok := function.(func(data *types.ReadyEventData)); ok {
 			handlers.OnReady = append(handlers.OnReady, function)
 		} else {
 			failed = true
 		}
-	case types.MessageCreateEventHandler:
+	case types.GatewayEventMessageCreate:
 		if function, ok := function.(func(data *types.MessageEventData)); ok {
 			handlers.OnMessageCreate = append(handlers.OnMessageCreate, function)
 		} else {
 			failed = true
 		}
-	case types.MessageUpdateEventHandler:
+	case types.GatewayEventMessageUpdate:
 		if function, ok := function.(func(data *types.MessageEventData)); ok {
 			handlers.OnMessageUpdate = append(handlers.OnMessageUpdate, function)
 		} else {
 			failed = true
 		}
-	case types.InvalidatedEventHandler:
+	case types.GatewayEventInvalidated:
 		if function, ok := function.(func()); ok {
 			handlers.OnInvalidated = append(handlers.OnInvalidated, function)
 		} else {
 			failed = true
 		}
-	case types.ReconnectEventHandler:
+	case types.GatewayEventReconnect:
 		if function, ok := function.(func()); ok {
 			handlers.OnReconnect = append(handlers.OnReconnect, function)
 		} else {

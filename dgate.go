@@ -8,15 +8,16 @@ type Client struct {
 }
 
 func NewClient(token string) *Client {
-	s := discord.Selfbot{Token: token}
-	g := discord.CreateGateway(&s)
-	return &Client{&s, g}
+	selfbot := discord.Selfbot{Token: token}
+	gateway := discord.CreateGateway(&selfbot)
+
+	return &Client{&selfbot, gateway}
 }
 
-func (c *Client) Connect() error {
-	return c.Gateway.Connect()
+func (client *Client) Connect() error {
+	return client.Gateway.Connect()
 }
 
-func (c *Client) AddHandler(event string, function any) error {
-	return c.Gateway.Handlers.Add(event, function)
+func (client *Client) AddHandler(event string, function any) error {
+	return client.Gateway.Handlers.Add(event, function)
 }

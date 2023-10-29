@@ -1,7 +1,10 @@
 {
     "cSpell.words": [
         "dgate",
-        "luminaldev"
+        "fasthttp",
+        "luminaldev",
+        "selfbot",
+        "valyala"
     ],
     "editor.fontFamily": "Fira Code",
     "editor.fontLigatures": true,
