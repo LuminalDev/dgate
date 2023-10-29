@@ -1,6 +1,8 @@
 package dgate
 
-import "github.com/luminaldev/dgate/discord"
+import (
+	"github.com/luminaldev/dgate/discord"
+)
 
 type Client struct {
 	Selfbot *discord.Selfbot
@@ -20,4 +22,8 @@ func (client *Client) Connect() error {
 
 func (client *Client) AddHandler(event string, function any) error {
 	return client.Gateway.Handlers.Add(event, function)
+}
+
+func (client *Client) Close() {
+	client.Gateway.Close()
 }

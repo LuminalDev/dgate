@@ -358,3 +358,13 @@ func (gateway *Gateway) startHandler() {
 		}
 	}
 }
+
+func (gateway *Gateway) Close() {
+	gateway.CloseChan <- struct{}{}
+	err := gateway.Connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "going away"), time.Now().Add(time.Second*10))
+	if err != nil {
+		if gateway.Connection != nil {
+			gateway.Connection.Close()
+		}
+	}
+}
