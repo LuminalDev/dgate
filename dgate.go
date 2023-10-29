@@ -1,6 +1,6 @@
 package dgate
 
-import "dgate/discord"
+import "github.com/LuminalDev/dgate/discord"
 
 type Client struct {
 	Selfbot *discord.Selfbot

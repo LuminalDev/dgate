@@ -1,8 +1,8 @@
 package dgate
 
 import (
-	"dgate/types"
 	"fmt"
+	"github.com/LuminalDev/dgate/types"
 	"os"
 	"testing"
 )

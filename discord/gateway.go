@@ -1,10 +1,10 @@
 package discord
 
 import (
-	"dgate/types"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/LuminalDev/dgate/types"
 	"github.com/fasthttp/websocket"
 	"net/http"
 	"reflect"
