@@ -21,13 +21,13 @@ func Test_Main(t *testing.T) {
 	client := NewClient(string(token))
 
 	client.AddHandler(types.GatewayEventReady, func(e *types.ReadyEventData) {
-		fmt.Println(e)
+		fmt.Printf("%#v", e)
 	})
 	client.AddHandler(types.GatewayEventMessageCreate, func(e *types.MessageEventData) {
-		fmt.Println(e)
+		fmt.Printf("%#v", e)
 	})
 	client.AddHandler(types.GatewayEventMessageUpdate, func(e *types.MessageEventData) {
-		fmt.Println(e)
+		fmt.Printf("%#v", e)
 	})
 
 	handleErr(client.Connect())
