@@ -75,6 +75,7 @@ type DefaultEvent struct {
 	Op int    `json:"op"`
 	T  string `json:"t,omitempty"`
 	S  int    `json:"s,omitempty"`
+	D  any    `json:"d,omitempty"`
 }
 
 type ReadyEvent struct {

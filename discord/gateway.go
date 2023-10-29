@@ -198,6 +198,7 @@ func (g *Gateway) heartbeatSender() {
 func (g *Gateway) sendHeartbeat() error {
 	payload, err := json.Marshal(types.DefaultEvent{
 		Op: types.OpcodeHeartbeat,
+		D:  4,
 	})
 	if err != nil {
 		return err
@@ -269,6 +270,7 @@ func (g *Gateway) startHandler() {
 		default:
 			msg, err := g.readMessage()
 			if err != nil {
+				fmt.Println(err)
 				return
 			}
 			var def types.DefaultEvent
