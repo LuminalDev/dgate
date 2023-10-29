@@ -52,9 +52,11 @@ func (gateway *Gateway) Connect() error {
 	if err = gateway.hello(); err != nil {
 		return err
 	}
+
 	if err = gateway.identify(); err != nil {
 		return err
 	}
+
 	if err = gateway.ready(); err != nil {
 		return err
 	}
