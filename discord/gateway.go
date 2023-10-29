@@ -25,6 +25,7 @@ func init() {
 
 type Gateway struct {
 	CloseChan         chan struct{}
+	Closed            bool
 	Connection        *websocket.Conn
 	Selfbot           *Selfbot
 	LastSeq           int
@@ -47,6 +48,7 @@ func (gateway *Gateway) Connect() error {
 		return err
 	}
 
+	gateway.Closed = false
 	gateway.Connection = conn
 
 	if err = gateway.hello(); err != nil {
@@ -261,15 +263,21 @@ func (gateway *Gateway) sendMessage(payload []byte) error {
 }
 
 func (gateway *Gateway) readMessage() ([]byte, error) {
-	if gateway.Connection == nil {
-		return nil, errors.New("gateway connection is already closed")
+	if gateway.Closed {
+		return nil, errors.New("gateway connection is closed")
 	}
 
 	_, msg, err := gateway.Connection.ReadMessage()
 
 	if err != nil {
 		var closeError *websocket.CloseError
-		errors.As(err, &closeError)
+
+		switch err := err.(type) {
+		case *websocket.CloseError:
+			closeError = err
+		default:
+			return nil, err // assume close
+		}
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
@@ -315,7 +323,6 @@ func (gateway *Gateway) startHandler() {
 			msg, err := gateway.readMessage()
 
 			if err != nil {
-				fmt.Println(err)
 				return
 			}
 
@@ -370,15 +377,22 @@ func (gateway *Gateway) startHandler() {
 	}
 }
 
-func (gateway *Gateway) Close() {
-	gateway.CloseChan <- struct{}{}
+func (gateway *Gateway) Close() error {
+	if gateway.Closed || gateway.Connection == nil {
+		return errors.New("gateway connection is already closed")
+	}
+
+	gateway.Closed = true
 
 	err := gateway.Connection.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "going away"), time.Now().Add(time.Second*10))
 
 	if err != nil {
-		if gateway.Connection != nil {
-			gateway.Connection.Close()
-			gateway.Connection = nil
-		}
+		return err
 	}
+
+	gateway.CloseChan <- struct{}{}
+	gateway.Connection.Close()
+	gateway.Connection = nil
+
+	return nil
 }
