@@ -1,13 +1,13 @@
 package discord
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fasthttp/websocket"
+	"github.com/goccy/go-json"
 	"github.com/luminaldev/dgate/types"
 )
 
@@ -152,10 +152,12 @@ func (gateway *Gateway) identify() error {
 		}
 
 		err = gateway.sendMessage(payload)
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -193,6 +195,7 @@ func (gateway *Gateway) ready() error {
 	for _, handler := range gateway.Handlers.OnReady {
 		handler(&ready.D)
 	}
+
 	return nil
 }
 
@@ -201,19 +204,19 @@ func (gateway *Gateway) canReconnect() bool {
 }
 
 func (gateway *Gateway) heartbeatSender() {
-	ticker := time.NewTicker(gateway.heartbeatInterval * time.Millisecond)
+	ticker := time.NewTicker(gateway.heartbeatInterval * time.Millisecond) // Every heartbeat interval (sent in milliseconds).
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-ticker.C: // On ticker tick.
 			if err := gateway.sendHeartbeat(); err != nil {
 				return
 			}
-		case <-gateway.CloseChan:
+		case <-gateway.CloseChan: // If a close is signalled.
 			return
 		default:
-			time.Sleep(25 * time.Millisecond)
+			time.Sleep(25 * time.Millisecond) // Wait to prevent CPU overload.
 		}
 	}
 }

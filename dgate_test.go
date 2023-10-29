@@ -19,6 +19,7 @@ func Test_Main(t *testing.T) {
 	handleErr(err)
 
 	c := NewClient(string(token))
+
 	c.AddHandler(types.ReadyEventHandler, func(e *types.ReadyEventData) {
 		fmt.Println(e)
 	})
