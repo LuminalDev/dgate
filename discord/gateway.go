@@ -118,7 +118,7 @@ func (gateway *Gateway) identify() error {
 					OS:                     OS,
 					Browser:                BROWSER,
 					Device:                 DEVICE,
-					SystemLocale:           "en-us",
+					SystemLocale:           clientLocale,
 					BrowserUserAgent:       USER_AGENT,
 					BrowserVersion:         BROWSER_VERSION,
 					OSVersion:              OS_VERSION,
