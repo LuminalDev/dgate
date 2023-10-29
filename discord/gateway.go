@@ -268,7 +268,8 @@ func (gateway *Gateway) readMessage() ([]byte, error) {
 	_, msg, err := gateway.Connection.ReadMessage()
 
 	if err != nil {
-		closeError := err.(*websocket.CloseError)
+		var closeError *websocket.CloseError
+		errors.As(err, &closeError)
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
