@@ -283,6 +283,7 @@ func (gateway *Gateway) readMessage() ([]byte, error) {
 			}
 		}
 	}
+
 	return msg, nil
 }
 
