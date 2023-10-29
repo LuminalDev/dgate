@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"time"
 
 	"github.com/fasthttp/websocket"
@@ -39,8 +38,8 @@ func CreateGateway(selfbot *Selfbot) *Gateway {
 	return &Gateway{CloseChan: make(chan struct{}), Selfbot: selfbot, GatewayURL: gatewayURL}
 }
 
-func (g *Gateway) Connect() error {
-	conn, resp, err := websocket.DefaultDialer.Dial(g.GatewayURL, headers)
+func (gateway *Gateway) Connect() error {
+	conn, resp, err := websocket.DefaultDialer.Dial(gateway.GatewayURL, headers)
 
 	if resp.StatusCode == 404 {
 		return fmt.Errorf("gateway not found")
@@ -48,24 +47,24 @@ func (g *Gateway) Connect() error {
 		return err
 	}
 
-	g.Connection = conn
+	gateway.Connection = conn
 
-	if err = g.hello(); err != nil {
+	if err = gateway.hello(); err != nil {
 		return err
 	}
-	if err = g.identify(); err != nil {
+	if err = gateway.identify(); err != nil {
 		return err
 	}
-	if err = g.ready(); err != nil {
+	if err = gateway.ready(); err != nil {
 		return err
 	}
 
-	g.startHandler()
+	gateway.startHandler()
 	return nil
 }
 
-func (g *Gateway) hello() error {
-	msg, err := g.readMessage()
+func (gateway *Gateway) hello() error {
+	msg, err := gateway.readMessage()
 
 	if err != nil {
 		return err
@@ -81,19 +80,19 @@ func (g *Gateway) hello() error {
 		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeHello, resp.Op)
 	}
 
-	g.heartbeatInterval = time.Duration(resp.D.HeartbeatInterval)
-	go g.heartbeatSender()
+	gateway.heartbeatInterval = time.Duration(resp.D.HeartbeatInterval)
+	go gateway.heartbeatSender()
 
 	return nil
 }
 
-func (g *Gateway) identify() error {
+func (gateway *Gateway) identify() error {
 	payload, err := json.Marshal(types.ResumePayload{
 		Op: types.OpcodeResume,
 		D: types.ResumePayloadData{
-			Token:     g.Selfbot.Token,
-			SessionID: g.SessionID,
-			Seq:       g.LastSeq,
+			Token:     gateway.Selfbot.Token,
+			SessionID: gateway.SessionID,
+			Seq:       gateway.LastSeq,
 		},
 	})
 
@@ -101,8 +100,8 @@ func (g *Gateway) identify() error {
 		return err
 	}
 
-	if g.canReconnect() {
-		err := g.sendMessage(payload)
+	if gateway.canReconnect() {
+		err := gateway.sendMessage(payload)
 
 		if err != nil {
 			return err
@@ -111,7 +110,7 @@ func (g *Gateway) identify() error {
 		payload, err := json.Marshal(types.IdentifyPayload{
 			Op: types.OpcodeIdentify,
 			D: types.IdentifyPayloadData{
-				Token:        g.Selfbot.Token,
+				Token:        gateway.Selfbot.Token,
 				Capabilities: CAPABILITIES,
 				Properties: types.SuperProperties{
 					OS:                     OS,
@@ -152,7 +151,7 @@ func (g *Gateway) identify() error {
 			return err
 		}
 
-		err = g.sendMessage(payload)
+		err = gateway.sendMessage(payload)
 		if err != nil {
 			return err
 		}
@@ -160,8 +159,8 @@ func (g *Gateway) identify() error {
 	return nil
 }
 
-func (g *Gateway) ready() error {
-	msg, err := g.readMessage()
+func (gateway *Gateway) ready() error {
+	msg, err := gateway.readMessage()
 
 	if err != nil {
 		return err
@@ -175,8 +174,8 @@ func (g *Gateway) ready() error {
 	}
 
 	if event.Op == types.OpcodeInvalidSession {
-		<-g.CloseChan
-		return g.reconnect()
+		<-gateway.CloseChan
+		return gateway.reconnect()
 	} else if event.Op != types.OpcodeDispatch {
 		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeDispatch, event.Op)
 	}
@@ -187,31 +186,31 @@ func (g *Gateway) ready() error {
 		return err
 	}
 
-	g.Selfbot.User = ready.D.User
-	g.SessionID = ready.D.SessionID
-	g.GatewayURL = ready.D.ResumeGatewayURL
+	gateway.Selfbot.User = ready.D.User
+	gateway.SessionID = ready.D.SessionID
+	gateway.GatewayURL = ready.D.ResumeGatewayURL
 
-	for _, handler := range g.Handlers.OnReady {
+	for _, handler := range gateway.Handlers.OnReady {
 		handler(&ready.D)
 	}
 	return nil
 }
 
-func (g *Gateway) canReconnect() bool {
-	return g.SessionID != "" && g.LastSeq != 0 && g.GatewayURL != ""
+func (gateway *Gateway) canReconnect() bool {
+	return gateway.SessionID != "" && gateway.LastSeq != 0 && gateway.GatewayURL != ""
 }
 
-func (g *Gateway) heartbeatSender() {
-	ticker := time.NewTicker(g.heartbeatInterval * time.Millisecond)
+func (gateway *Gateway) heartbeatSender() {
+	ticker := time.NewTicker(gateway.heartbeatInterval * time.Millisecond)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := g.sendHeartbeat(); err != nil {
+			if err := gateway.sendHeartbeat(); err != nil {
 				return
 			}
-		case <-g.CloseChan:
+		case <-gateway.CloseChan:
 			return
 		default:
 			time.Sleep(25 * time.Millisecond)
@@ -219,7 +218,7 @@ func (g *Gateway) heartbeatSender() {
 	}
 }
 
-func (g *Gateway) sendHeartbeat() error {
+func (gateway *Gateway) sendHeartbeat() error {
 	payload, err := json.Marshal(types.DefaultEvent{
 		Op: types.OpcodeHeartbeat,
 		D:  4,
@@ -229,11 +228,11 @@ func (g *Gateway) sendHeartbeat() error {
 		return err
 	}
 
-	return g.sendMessage(payload)
+	return gateway.sendMessage(payload)
 
 }
-func (g *Gateway) sendMessage(payload []byte) error {
-	err := g.Connection.WriteMessage(websocket.TextMessage, payload)
+func (gateway *Gateway) sendMessage(payload []byte) error {
+	err := gateway.Connection.WriteMessage(websocket.TextMessage, payload)
 
 	if err != nil {
 		var closeError *websocket.CloseError
@@ -241,13 +240,13 @@ func (g *Gateway) sendMessage(payload []byte) error {
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived:
-			go g.reset()
+			go gateway.reset()
 			return err
 		default:
 			closeEvent, ok := types.CloseEventCodes[closeError.Code]
 
 			if ok && closeEvent.Reconnect {
-				go g.reconnect()
+				go gateway.reconnect()
 			}
 
 			return fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
@@ -256,8 +255,8 @@ func (g *Gateway) sendMessage(payload []byte) error {
 	return nil
 }
 
-func (g *Gateway) readMessage() ([]byte, error) {
-	_, msg, err := g.Connection.ReadMessage()
+func (gateway *Gateway) readMessage() ([]byte, error) {
+	_, msg, err := gateway.Connection.ReadMessage()
 
 	if err != nil {
 		var closeError *websocket.CloseError
@@ -265,12 +264,12 @@ func (g *Gateway) readMessage() ([]byte, error) {
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
-			go g.reset()
+			go gateway.reset()
 			return nil, err
 		default:
 			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is re-connectable.
-					go g.reconnect()
+					go gateway.reconnect()
 				}
 
 				return nil, fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
@@ -282,84 +281,76 @@ func (g *Gateway) readMessage() ([]byte, error) {
 	return msg, nil
 }
 
-func (g *Gateway) reset() error {
-	g.LastSeq = 0
-	g.SessionID = ""
+func (gateway *Gateway) reset() error {
+	gateway.LastSeq = 0
+	gateway.SessionID = ""
 
-	return g.reconnect()
+	return gateway.reconnect()
 }
 
-func (g *Gateway) reconnect() error {
-	return g.Connect()
+func (gateway *Gateway) reconnect() error {
+	return gateway.Connect()
 }
 
-func (g *Gateway) startHandler() {
+func (gateway *Gateway) startHandler() {
 	for {
 		select {
-		case <-g.CloseChan:
+		case <-gateway.CloseChan:
 			return
 		default:
-			msg, err := g.readMessage()
+			msg, err := gateway.readMessage()
 
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 
-			var def types.DefaultEvent
-			if err = json.Unmarshal(msg, &def); err != nil {
+			var event types.DefaultEvent
+
+			if err = json.Unmarshal(msg, &event); err != nil {
 				return
 			}
 
-			switch def.Op {
+			switch event.Op {
 			case types.OpcodeDispatch:
-				switch def.T {
+				var data types.MessageEvent
+
+				err := json.Unmarshal(msg, &data)
+
+				if err != nil {
+					continue
+				}
+
+				switch event.T {
 				case types.EventNameMessageCreate:
-					var data types.MessageEvent
-
-					err := json.Unmarshal(msg, &data)
-
-					if err != nil {
-						continue
-					}
-
-					for _, handler := range g.Handlers.OnMessageCreate {
+					for _, handler := range gateway.Handlers.OnMessageCreate {
 						handler(&data.D)
 					}
 				case types.EventNameMessageUpdate:
-					var data types.MessageEvent
-
-					err := json.Unmarshal(msg, &data)
-
-					if err != nil {
-						continue
-					}
-
-					for _, handler := range g.Handlers.OnMessageUpdate {
+					for _, handler := range gateway.Handlers.OnMessageUpdate {
 						handler(&data.D)
 					}
-
 				}
 			case types.OpcodeHeartbeat:
-				g.sendHeartbeat()
+				gateway.sendHeartbeat()
 			case types.OpcodeHeartbeatACK:
 				continue
 			case types.OpcodeReconnect:
-				g.reconnect()
+				gateway.reconnect()
 
-				for _, handler := range g.Handlers.OnReconnect {
+				for _, handler := range gateway.Handlers.OnReconnect {
 					handler()
 				}
 			case types.OpcodeInvalidSession:
-				g.reconnect()
+				gateway.reconnect()
 
-				for _, handler := range g.Handlers.OnInvalidated {
+				for _, handler := range gateway.Handlers.OnInvalidated {
 					handler()
 				}
 			}
 
-			if !reflect.ValueOf(def.S).IsZero() {
-				g.LastSeq = def.S
+			if event.S == 0 { // Some payloads, for example the heartbeat ack, don't contribute to the sequence ID.
+				gateway.LastSeq = event.S
 			}
 		}
 	}

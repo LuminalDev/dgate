@@ -1,10 +1,8 @@
 {
     "recommendations": [
         "aaron-bond.better-comments",
-        "albert.tabout",
         "alexanderte.dainty-one-dark-pro-vscode",
         "christian-kohler.path-intellisense",
-        "formulahendry.auto-rename-tag",
         "github.copilot",
         "golang.go",
         "gruntfuggly.todo-tree",

@@ -50,29 +50,30 @@ type GuildVersions struct {
 }
 
 type Presence struct {
-	Status     string        `json:"status"`
-	Since      int64         `json:"since"`
-	Activities []interface{} `json:"activities"`
-	Afk        bool          `json:"afk"`
+	Status     string `json:"status"`
+	Since      int64  `json:"since"`
+	Activities []any  `json:"activities"`
+	Afk        bool   `json:"afk"`
 }
 
 type SuperProperties struct {
-	OS                     string      `json:"os"`
-	Browser                string      `json:"browser"`
-	Device                 string      `json:"device"`
-	SystemLocale           string      `json:"system_locale"`
-	BrowserUserAgent       string      `json:"browser_user_agent"`
-	BrowserVersion         string      `json:"browser_version"`
-	OSVersion              string      `json:"os_version"`
-	Referrer               string      `json:"referrer"`
-	ReferringDomain        string      `json:"referring_domain"`
-	ReferrerCurrent        string      `json:"referrer_current"`
-	ReferringDomainCurrent string      `json:"referring_domain_current"`
-	ReleaseChannel         string      `json:"release_channel"`
-	ClientBuildNumber      string      `json:"client_build_number"`
-	ClientEventSource      interface{} `json:"client_event_source"`
+	OS                     string `json:"os"`
+	Browser                string `json:"browser"`
+	Device                 string `json:"device"`
+	SystemLocale           string `json:"system_locale"`
+	BrowserUserAgent       string `json:"browser_user_agent"`
+	BrowserVersion         string `json:"browser_version"`
+	OSVersion              string `json:"os_version"`
+	Referrer               string `json:"referrer"`
+	ReferringDomain        string `json:"referring_domain"`
+	ReferrerCurrent        string `json:"referrer_current"`
+	ReferringDomainCurrent string `json:"referring_domain_current"`
+	ReleaseChannel         string `json:"release_channel"`
+	ClientBuildNumber      string `json:"client_build_number"`
+	ClientEventSource      any    `json:"client_event_source"`
 }
 
+// https://discord.com/developers/docs/topics/gateway-events#payload-structure
 type DefaultEvent struct {
 	Op int    `json:"op"`
 	T  string `json:"t,omitempty"`
