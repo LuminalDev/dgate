@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/fasthttp/websocket"
 	"net/http"
+	"reflect"
 	"time"
 )
 
@@ -204,7 +205,6 @@ func (g *Gateway) sendHeartbeat() error {
 	return g.sendMessage(payload)
 
 }
-
 func (g *Gateway) sendMessage(payload []byte) error {
 	err := g.Connection.WriteMessage(websocket.TextMessage, payload)
 	if err != nil {
@@ -212,18 +212,15 @@ func (g *Gateway) sendMessage(payload []byte) error {
 		errors.As(err, &closeError)
 
 		switch closeError.Code {
-		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
+		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived:
 			go g.reset()
 			return err
 		default:
-			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
-				if closeEvent.Reconnect { // If the session is reconnectable.
-					go g.reconnect()
-				}
-				return fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
-			} else {
-				return err
+			closeEvent, ok := types.CloseEventCodes[closeError.Code]
+			if ok && closeEvent.Reconnect {
+				go g.reconnect()
 			}
+			return fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
 		}
 	}
 	return nil
@@ -290,8 +287,34 @@ func (g *Gateway) startHandler() {
 					for _, handler := range g.Handlers.OnMessageCreate {
 						handler(&data.D)
 					}
-				}
+				case types.EventNameMessageUpdate:
+					var data types.MessageEvent
+					err := json.Unmarshal(msg, &data)
+					if err != nil {
+						continue
+					}
+					for _, handler := range g.Handlers.OnMessageUpdate {
+						handler(&data.D)
+					}
 
+				}
+			case types.OpcodeHeartbeat:
+				g.sendHeartbeat()
+			case types.OpcodeHeartbeatACK:
+				continue
+			case types.OpcodeReconnect:
+				g.reconnect()
+				for _, handler := range g.Handlers.OnReconnect {
+					handler()
+				}
+			case types.OpcodeInvalidSession:
+				g.reconnect()
+				for _, handler := range g.Handlers.OnInvalidated {
+					handler()
+				}
+			}
+			if !reflect.ValueOf(def.S).IsZero() {
+				g.LastSeq = def.S
 			}
 		}
 	}

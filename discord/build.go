@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"fmt"
 	"github.com/valyala/fasthttp"
 	"regexp"
 )
@@ -27,7 +28,7 @@ func getLatestBuild() (string, error) {
 	asset := matches[len(matches)-2][1]
 
 	req.Header.SetMethod(fasthttp.MethodGet)
-	req.SetRequestURI("https://discord.com/assets/" + asset + ".js")
+	req.SetRequestURI(fmt.Sprintf("https://discord.com/assets/%s.js", asset))
 	if err := requestClient.Do(req, resp); err != nil {
 		return "", err
 	}
