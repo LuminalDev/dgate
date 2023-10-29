@@ -1,6 +1,6 @@
 package discord
 
-import "github.com/LuminalDev/dgate/types"
+import "github.com/luminaldev/dgate/types"
 
 type Selfbot struct {
 	Token string

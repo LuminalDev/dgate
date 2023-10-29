@@ -2,7 +2,7 @@ package discord
 
 import (
 	"fmt"
-	"github.com/LuminalDev/dgate/types"
+	"github.com/luminaldev/dgate/types"
 	"sync"
 )
 

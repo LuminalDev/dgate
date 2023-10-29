@@ -1,4 +1,4 @@
-module github.com/LuminalDev/dgate
+module github.com/luminaldev/dgate
 
 go 1.21
 
