@@ -10,10 +10,12 @@ type HelloEvent struct {
 		HeartbeatInterval int `json:"heartbeat_interval"`
 	} `json:"d"`
 }
+
 type ResumePayload struct {
 	Op int               `json:"op"`
 	D  ResumePayloadData `json:"d"`
 }
+
 type ResumePayloadData struct {
 	Token     string `json:"token"`
 	SessionID string `json:"session_id"`
@@ -90,6 +92,7 @@ type ReadyEventData struct {
 	SessionID        string  `json:"session_id"`
 	ResumeGatewayURL string  `json:"resume_gateway_url"`
 }
+
 type MessageEvent struct {
 	Op int              `json:"op"`
 	D  MessageEventData `json:"d"`

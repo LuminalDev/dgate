@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fasthttp/websocket"
-	"github.com/luminaldev/dgate/types"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/fasthttp/websocket"
+	"github.com/luminaldev/dgate/types"
 )
 
 var (
@@ -40,11 +41,13 @@ func CreateGateway(selfbot *Selfbot) *Gateway {
 
 func (g *Gateway) Connect() error {
 	conn, resp, err := websocket.DefaultDialer.Dial(g.GatewayURL, headers)
+
 	if resp.StatusCode == 404 {
 		return fmt.Errorf("gateway not found")
 	} else if err != nil {
 		return err
 	}
+
 	g.Connection = conn
 
 	if err = g.hello(); err != nil {
@@ -56,24 +59,31 @@ func (g *Gateway) Connect() error {
 	if err = g.ready(); err != nil {
 		return err
 	}
+
 	g.startHandler()
 	return nil
 }
 
 func (g *Gateway) hello() error {
 	msg, err := g.readMessage()
+
 	if err != nil {
 		return err
 	}
+
 	var resp types.HelloEvent
+
 	if err = json.Unmarshal(msg, &resp); err != nil {
 		return err
 	}
+
 	if resp.Op != types.OpcodeHello {
 		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeHello, resp.Op)
 	}
+
 	g.heartbeatInterval = time.Duration(resp.D.HeartbeatInterval)
 	go g.heartbeatSender()
+
 	return nil
 }
 
@@ -86,11 +96,14 @@ func (g *Gateway) identify() error {
 			Seq:       g.LastSeq,
 		},
 	})
+
 	if err != nil {
 		return err
 	}
+
 	if g.canReconnect() {
 		err := g.sendMessage(payload)
+
 		if err != nil {
 			return err
 		}
@@ -134,9 +147,11 @@ func (g *Gateway) identify() error {
 				},
 			},
 		})
+
 		if err != nil {
 			return err
 		}
+
 		err = g.sendMessage(payload)
 		if err != nil {
 			return err
@@ -147,27 +162,35 @@ func (g *Gateway) identify() error {
 
 func (g *Gateway) ready() error {
 	msg, err := g.readMessage()
+
 	if err != nil {
 		return err
 	}
+
 	var event types.DefaultEvent
 	err = json.Unmarshal(msg, &event)
+
 	if err != nil {
 		return err
 	}
+
 	if event.Op == types.OpcodeInvalidSession {
 		<-g.CloseChan
 		return g.reconnect()
 	} else if event.Op != types.OpcodeDispatch {
 		return fmt.Errorf("unexpected opcode, expected %d, got %d", types.OpcodeDispatch, event.Op)
 	}
+
 	var ready types.ReadyEvent
+
 	if err = json.Unmarshal(msg, &ready); err != nil {
 		return err
 	}
+
 	g.Selfbot.User = ready.D.User
 	g.SessionID = ready.D.SessionID
 	g.GatewayURL = ready.D.ResumeGatewayURL
+
 	for _, handler := range g.Handlers.OnReady {
 		handler(&ready.D)
 	}
@@ -177,6 +200,7 @@ func (g *Gateway) ready() error {
 func (g *Gateway) canReconnect() bool {
 	return g.SessionID != "" && g.LastSeq != 0 && g.GatewayURL != ""
 }
+
 func (g *Gateway) heartbeatSender() {
 	ticker := time.NewTicker(g.heartbeatInterval * time.Millisecond)
 	defer ticker.Stop()
@@ -200,14 +224,17 @@ func (g *Gateway) sendHeartbeat() error {
 		Op: types.OpcodeHeartbeat,
 		D:  4,
 	})
+
 	if err != nil {
 		return err
 	}
+
 	return g.sendMessage(payload)
 
 }
 func (g *Gateway) sendMessage(payload []byte) error {
 	err := g.Connection.WriteMessage(websocket.TextMessage, payload)
+
 	if err != nil {
 		var closeError *websocket.CloseError
 		errors.As(err, &closeError)
@@ -218,9 +245,11 @@ func (g *Gateway) sendMessage(payload []byte) error {
 			return err
 		default:
 			closeEvent, ok := types.CloseEventCodes[closeError.Code]
+
 			if ok && closeEvent.Reconnect {
 				go g.reconnect()
 			}
+
 			return fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
 		}
 	}
@@ -229,6 +258,7 @@ func (g *Gateway) sendMessage(payload []byte) error {
 
 func (g *Gateway) readMessage() ([]byte, error) {
 	_, msg, err := g.Connection.ReadMessage()
+
 	if err != nil {
 		var closeError *websocket.CloseError
 		errors.As(err, &closeError)
@@ -239,9 +269,10 @@ func (g *Gateway) readMessage() ([]byte, error) {
 			return nil, err
 		default:
 			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {
-				if closeEvent.Reconnect { // If the session is reconnectable.
+				if closeEvent.Reconnect { // If the session is re-connectable.
 					go g.reconnect()
 				}
+
 				return nil, fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
 			} else {
 				return nil, err
@@ -269,32 +300,41 @@ func (g *Gateway) startHandler() {
 			return
 		default:
 			msg, err := g.readMessage()
+
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
+
 			var def types.DefaultEvent
 			if err = json.Unmarshal(msg, &def); err != nil {
 				return
 			}
+
 			switch def.Op {
 			case types.OpcodeDispatch:
 				switch def.T {
 				case types.EventNameMessageCreate:
 					var data types.MessageEvent
+
 					err := json.Unmarshal(msg, &data)
+
 					if err != nil {
 						continue
 					}
+
 					for _, handler := range g.Handlers.OnMessageCreate {
 						handler(&data.D)
 					}
 				case types.EventNameMessageUpdate:
 					var data types.MessageEvent
+
 					err := json.Unmarshal(msg, &data)
+
 					if err != nil {
 						continue
 					}
+
 					for _, handler := range g.Handlers.OnMessageUpdate {
 						handler(&data.D)
 					}
@@ -306,15 +346,18 @@ func (g *Gateway) startHandler() {
 				continue
 			case types.OpcodeReconnect:
 				g.reconnect()
+
 				for _, handler := range g.Handlers.OnReconnect {
 					handler()
 				}
 			case types.OpcodeInvalidSession:
 				g.reconnect()
+
 				for _, handler := range g.Handlers.OnInvalidated {
 					handler()
 				}
 			}
+
 			if !reflect.ValueOf(def.S).IsZero() {
 				g.LastSeq = def.S
 			}

@@ -2,9 +2,10 @@ package dgate
 
 import (
 	"fmt"
-	"github.com/luminaldev/dgate/types"
 	"os"
 	"testing"
+
+	"github.com/luminaldev/dgate/types"
 )
 
 func handleErr(err error) {
@@ -16,6 +17,7 @@ func handleErr(err error) {
 func Test_Main(t *testing.T) {
 	token, err := os.ReadFile("test_token")
 	handleErr(err)
+
 	c := NewClient(string(token))
 	c.AddHandler(types.ReadyEventHandler, func(e *types.ReadyEventData) {
 		fmt.Println(e)
@@ -26,5 +28,6 @@ func Test_Main(t *testing.T) {
 	c.AddHandler(types.MessageUpdateEventHandler, func(e *types.MessageEventData) {
 		fmt.Println(e)
 	})
+
 	handleErr(c.Connect())
 }

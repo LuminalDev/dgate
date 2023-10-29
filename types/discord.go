@@ -135,6 +135,7 @@ type Embed struct {
 	Author      EmbedAuthor            `json:"author,omitempty"`
 	Fields      []EmbedField           `json:"fields,omitempty"`
 }
+
 type MessageEmbedImage struct {
 	URL      string `json:"url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
@@ -155,17 +156,20 @@ type EmbedFooter struct {
 }
 
 type EmbedAuthor struct {
-	Name         string `json:"name,omitempty"`
-	URL          string `json:"url,omitempty"`
-	IconURL      string `json:"icon_url,omitempty"`
+	Name    string `json:"name,omitempty"`
+	URL     string `json:"url,omitempty"`
+	IconURL string `json:"icon_url,omitempty"`
+
 	ProxyIconURL string `json:"proxy_icon_url,omitempty"`
 }
+
 type MessageEmbedThumbnail struct {
 	URL      string `json:"url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
 }
+
 type EmbedProvider struct {
 	Name string `json:"name,omitempty"`
 	URL  string `json:"url,omitempty"`
@@ -175,10 +179,12 @@ type Reaction struct {
 	Emojis Emoji `json:"emoji,omitempty"`
 	Count  int   `json:"count,omitempty"`
 }
+
 type MessageComponent struct {
 	Type    int       `json:"type"`
 	Buttons []Buttons `json:"components"`
 }
+
 type Buttons struct {
 	Type     int         `json:"type,omitempty"`
 	Style    int         `json:"style,omitempty"`
