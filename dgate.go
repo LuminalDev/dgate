@@ -2,18 +2,20 @@ package dgate
 
 import (
 	"github.com/luminaldev/dgate/discord"
+	"github.com/luminaldev/dgate/types"
 )
 
 type Client struct {
 	Selfbot *discord.Selfbot
 	Gateway *discord.Gateway
+	Config  *types.Config
 }
 
-func NewClient(token string) *Client {
+func NewClient(token string, config *types.Config) *Client {
 	selfbot := discord.Selfbot{Token: token}
-	gateway := discord.CreateGateway(&selfbot)
+	gateway := discord.CreateGateway(&selfbot, config)
 
-	return &Client{&selfbot, gateway}
+	return &Client{&selfbot, gateway, config}
 }
 
 func (client *Client) Connect() error {

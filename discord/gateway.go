@@ -12,16 +12,8 @@ import (
 )
 
 var (
-	gatewayURL = "wss://gateway.discord.gg/?encoding=json&v=" + API_VERSION
-	headers    = make(http.Header)
+	headers = make(http.Header)
 )
-
-func init() {
-	if len(headers) == 0 {
-		headers.Set("Host", "gateway.discord.gg")
-		headers.Set("User-Agent", USER_AGENT)
-	}
-}
 
 type Gateway struct {
 	CloseChan         chan struct{}
@@ -33,10 +25,15 @@ type Gateway struct {
 	heartbeatInterval time.Duration
 	GatewayURL        string
 	Handlers          Handlers
+	Config            *types.Config
 }
 
-func CreateGateway(selfbot *Selfbot) *Gateway {
-	return &Gateway{CloseChan: make(chan struct{}), Selfbot: selfbot, GatewayURL: gatewayURL}
+func CreateGateway(selfbot *Selfbot, config *types.Config) *Gateway {
+	if len(headers) == 0 {
+		headers.Set("Host", "gateway.discord.gg")
+		headers.Set("User-Agent", config.UserAgent)
+	}
+	return &Gateway{CloseChan: make(chan struct{}), Selfbot: selfbot, GatewayURL: "wss://gateway.discord.gg/?encoding=json&v=" + config.ApiVersion, Config: config}
 }
 
 func (gateway *Gateway) Connect() error {
@@ -115,15 +112,15 @@ func (gateway *Gateway) identify() error {
 			Op: types.OpcodeIdentify,
 			D: types.IdentifyPayloadData{
 				Token:        gateway.Selfbot.Token,
-				Capabilities: CAPABILITIES,
+				Capabilities: gateway.Config.Capabilities,
 				Properties: types.SuperProperties{
-					OS:                     OS,
-					Browser:                BROWSER,
-					Device:                 DEVICE,
+					OS:                     gateway.Config.Os,
+					Browser:                gateway.Config.Browser,
+					Device:                 gateway.Config.Device,
 					SystemLocale:           clientLocale,
-					BrowserUserAgent:       USER_AGENT,
-					BrowserVersion:         BROWSER_VERSION,
-					OSVersion:              OS_VERSION,
+					BrowserUserAgent:       gateway.Config.UserAgent,
+					BrowserVersion:         gateway.Config.BrowserVersion,
+					OSVersion:              gateway.Config.OsVersion,
 					Referrer:               "",
 					ReferringDomain:        "",
 					ReferrerCurrent:        "",
@@ -133,7 +130,7 @@ func (gateway *Gateway) identify() error {
 					ClientEventSource:      nil,
 				},
 				Presence: types.Presence{
-					Status:     STATUS,
+					Status:     gateway.Config.Presence,
 					Since:      0,
 					Activities: nil,
 					Afk:        false,

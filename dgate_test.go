@@ -19,7 +19,7 @@ func Test_Close(t *testing.T) {
 	token, err := os.ReadFile("test_token")
 	handleErr(err)
 
-	client := NewClient(string(token))
+	client := NewClient(string(token), &types.DefaultConfig)
 	client.AddHandler(types.GatewayEventReady, func(e *types.ReadyEventData) {
 		fmt.Printf("%#v", e)
 	})
@@ -36,7 +36,7 @@ func Test_Main(t *testing.T) {
 	token, err := os.ReadFile("test_token")
 	handleErr(err)
 
-	client := NewClient(string(token))
+	client := NewClient(string(token), &types.DefaultConfig)
 
 	client.AddHandler(types.GatewayEventReady, func(e *types.ReadyEventData) {
 		fmt.Printf("%#v\n", e)
