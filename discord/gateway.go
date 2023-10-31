@@ -240,7 +240,13 @@ func (gateway *Gateway) sendMessage(payload []byte) error {
 
 	if err != nil {
 		var closeError *websocket.CloseError
-		errors.As(err, &closeError)
+
+		switch err := err.(type) {
+		case *websocket.CloseError:
+			closeError = err
+		default:
+			return err // assume close
+		}
 
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived:
