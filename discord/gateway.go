@@ -88,27 +88,43 @@ func (gateway *Gateway) hello() error {
 }
 
 func (gateway *Gateway) identify() error {
-	payload, err := json.Marshal(types.ResumePayload{
-		Op: types.OpcodeResume,
-		D: types.ResumePayloadData{
-			Token:     gateway.Selfbot.Token,
-			SessionID: gateway.SessionID,
-			Seq:       gateway.LastSeq,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
+	var err error
+	var payload []byte
 
 	if gateway.canReconnect() {
-		err := gateway.sendMessage(payload)
+		payload, err = json.Marshal(types.ResumePayload{
+			Op: types.OpcodeResume,
+			D: types.ResumePayloadData{
+				Token:     gateway.Selfbot.Token,
+				SessionID: gateway.SessionID,
+				Seq:       gateway.LastSeq,
+			},
+		})
 
 		if err != nil {
 			return err
 		}
+
+		err = gateway.sendMessage(payload)
+
+		if err != nil {
+			return err
+		}
+
+		payload, err = json.Marshal(types.Presence{
+			Status:     gateway.Config.Presence,
+			Since:      0,
+			Activities: []any{},
+			Afk:        false,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = gateway.sendMessage(payload)
 	} else {
-		payload, err := json.Marshal(types.IdentifyPayload{
+		payload, err = json.Marshal(types.IdentifyPayload{
 			Op: types.OpcodeIdentify,
 			D: types.IdentifyPayloadData{
 				Token:        gateway.Selfbot.Token,
@@ -153,10 +169,10 @@ func (gateway *Gateway) identify() error {
 		}
 
 		err = gateway.sendMessage(payload)
+	}
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -285,6 +301,7 @@ func (gateway *Gateway) readMessage() ([]byte, error) {
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
 			go gateway.reset()
+
 			return nil, err
 		default:
 			if closeEvent, ok := types.CloseEventCodes[closeError.Code]; ok {

@@ -47,6 +47,8 @@ func Test_Main(t *testing.T) {
 	client.AddHandler(types.GatewayEventMessageUpdate, func(e *types.MessageEventData) {
 		fmt.Printf("%#v\n", e)
 	})
-
-	handleErr(client.Connect())
+	
+	go func() {
+		handleErr(client.Connect())
+	}()
 }
