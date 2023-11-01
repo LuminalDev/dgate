@@ -317,6 +317,48 @@ func (gateway *Gateway) reconnect() error {
 	return gateway.Connect()
 }
 
+func (gateway *Gateway) callHandlers(msg []byte, event types.DefaultEvent) error {
+	switch event.Op {
+	case types.OpcodeDispatch:
+		var data types.MessageEvent
+
+		err := json.Unmarshal(msg, &data)
+
+		if err != nil {
+			return err
+		}
+
+		switch event.T {
+		case types.EventNameMessageCreate:
+			for _, handler := range gateway.Handlers.OnMessageCreate {
+				handler(&data.D)
+			}
+		case types.EventNameMessageUpdate:
+			for _, handler := range gateway.Handlers.OnMessageUpdate {
+				handler(&data.D)
+			}
+		}
+	case types.OpcodeHeartbeat:
+		gateway.sendHeartbeat()
+	case types.OpcodeHeartbeatACK:
+
+	case types.OpcodeReconnect:
+		gateway.reconnect()
+
+		for _, handler := range gateway.Handlers.OnReconnect {
+			handler()
+		}
+	case types.OpcodeInvalidSession:
+		gateway.reconnect()
+
+		for _, handler := range gateway.Handlers.OnInvalidated {
+			handler()
+		}
+	}
+
+	return nil
+}
+
 func (gateway *Gateway) startHandler() {
 	for {
 		select {
@@ -326,51 +368,17 @@ func (gateway *Gateway) startHandler() {
 			msg, err := gateway.readMessage()
 
 			if err != nil {
-				return
+				return // TODO: Log error with some sort of method instead of returning and ending the handler.
 			}
 
 			var event types.DefaultEvent
 
 			if err = json.Unmarshal(msg, &event); err != nil {
-				return
+				return // TODO: Log error with some sort of method instead of returning and ending the handler.
 			}
 
-			switch event.Op {
-			case types.OpcodeDispatch:
-				var data types.MessageEvent
-
-				err := json.Unmarshal(msg, &data)
-
-				if err != nil {
-					continue
-				}
-
-				switch event.T {
-				case types.EventNameMessageCreate:
-					for _, handler := range gateway.Handlers.OnMessageCreate {
-						handler(&data.D)
-					}
-				case types.EventNameMessageUpdate:
-					for _, handler := range gateway.Handlers.OnMessageUpdate {
-						handler(&data.D)
-					}
-				}
-			case types.OpcodeHeartbeat:
-				gateway.sendHeartbeat()
-			case types.OpcodeHeartbeatACK:
-				continue
-			case types.OpcodeReconnect:
-				gateway.reconnect()
-
-				for _, handler := range gateway.Handlers.OnReconnect {
-					handler()
-				}
-			case types.OpcodeInvalidSession:
-				gateway.reconnect()
-
-				for _, handler := range gateway.Handlers.OnInvalidated {
-					handler()
-				}
+			if err = gateway.callHandlers(msg, event); err != nil {
+				return // TODO: Log error with some sort of method instead of returning and ending the handler.
 			}
 
 			if event.S == 0 { // Some payloads, for example the heartbeat ack, don't contribute to the sequence ID.
