@@ -18,14 +18,15 @@ var (
 type Gateway struct {
 	CloseChan         chan struct{}
 	Closed            bool
+	Config            *types.Config
 	Connection        *websocket.Conn
-	Selfbot           *Selfbot
-	LastSeq           int
-	SessionID         string
-	heartbeatInterval time.Duration
 	GatewayURL        string
 	Handlers          Handlers
-	Config            *types.Config
+	LastSeq           int
+	Selfbot           *Selfbot
+	SessionID         string
+	
+	heartbeatInterval time.Duration
 }
 
 func CreateGateway(selfbot *Selfbot, config *types.Config) *Gateway {
