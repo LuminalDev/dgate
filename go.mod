@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/fasthttp/websocket v1.5.6
 	github.com/goccy/go-json v0.10.2
-	github.com/valyala/fasthttp v1.50.0
 	github.com/jeandeaual/go-locale v0.0.0-20220711133428-7de61946b173
+	github.com/valyala/fasthttp v1.51.0
 )
 
 require (
