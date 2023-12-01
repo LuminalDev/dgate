@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	clientBuildNumber = mustGetLatestBuild()
+	clientBuildNumber = "250513"
 	clientLocale      = mustGetLocale()
 	requestClient     = fasthttp.Client{
 		ReadBufferSize:                8192,
