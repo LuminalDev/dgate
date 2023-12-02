@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	JS_FILE_REGEX    = regexp.MustCompile(`assets/+([a-z0-9]+)\.js`)
+	JS_FILE_REGEX    = regexp.MustCompile(`assets/+([a-z0-9.]+)\.js`)
 	BUILD_INFO_REGEX = regexp.MustCompile(`Build Number: "\)\.concat\("([0-9]{4,8})"`)
 )
 
@@ -26,7 +26,8 @@ func getLatestBuild() (string, error) {
 	}
 
 	matches := JS_FILE_REGEX.FindAllStringSubmatch(string(resp.Body()), -1)
-	asset := matches[len(matches)-2][1]
+	fmt.Println(string(resp.Body()))
+	asset := matches[len(matches)-10][1]
 
 	req.Header.SetMethod(fasthttp.MethodGet)
 	req.SetRequestURI(fmt.Sprintf("https://discord.com/assets/%s.js", asset))
