@@ -8,12 +8,13 @@ import (
 )
 
 type Handlers struct {
-	OnReady         []func(data *types.ReadyEventData)
-	OnMessageCreate []func(data *types.MessageEventData)
-	OnMessageUpdate []func(data *types.MessageEventData)
-	OnReconnect     []func()
-	mutex           sync.Mutex
-	OnInvalidated   []func()
+	OnReady             []func(data *types.ReadyEventData)
+	OnMessageCreate     []func(data *types.MessageEventData)
+	OnMessageUpdate     []func(data *types.MessageEventData)
+	OnGuildMembersChunk []func(data *types.GuildMembersChunkEventData)
+	OnReconnect         []func()
+	mutex               sync.Mutex
+	OnInvalidated       []func()
 }
 
 func (handlers *Handlers) Add(event string, function any) error {
@@ -44,6 +45,12 @@ func (handlers *Handlers) Add(event string, function any) error {
 	case types.GatewayEventInvalidated:
 		if function, ok := function.(func()); ok {
 			handlers.OnInvalidated = append(handlers.OnInvalidated, function)
+		} else {
+			failed = true
+		}
+	case types.EventNameGuildMembersChunk:
+		if function, ok := function.(func(data *types.GuildMembersChunkEventData)); ok {
+			handlers.OnGuildMembersChunk = append(handlers.OnGuildMembersChunk, function)
 		} else {
 			failed = true
 		}

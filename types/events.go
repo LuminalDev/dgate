@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type Opcode struct {
 	Op int `json:"op"`
 }
@@ -98,6 +100,10 @@ type MessageEvent struct {
 	Op int              `json:"op"`
 	D  MessageEventData `json:"d"`
 }
+type MemberEvent struct {
+	Op int                        `json:"op"`
+	D  GuildMembersChunkEventData `json:"d"`
+}
 
 type MessageEventData struct {
 	// Data is in different struct because it needs to be recursive
@@ -105,6 +111,46 @@ type MessageEventData struct {
 	ReferencedMessage MessageData `json:"referenced_message"`
 }
 
+type GuildMembersChunkEventData struct {
+	Presences []struct {
+		User struct {
+			Id string `json:"id"`
+		} `json:"user"`
+		Status       string `json:"status"`
+		ClientStatus struct {
+			Web string `json:"web"`
+		} `json:"client_status"`
+		Broadcast  interface{}   `json:"broadcast"`
+		Activities []interface{} `json:"activities"`
+	} `json:"presences"`
+	NotFound []interface{} `json:"not_found"`
+	Members  []struct {
+		User struct {
+			Username             string      `json:"username"`
+			PublicFlags          int         `json:"public_flags"`
+			Id                   string      `json:"id"`
+			GlobalName           string      `json:"global_name"`
+			DisplayName          string      `json:"display_name"`
+			Discriminator        string      `json:"discriminator"`
+			Bot                  bool        `json:"bot"`
+			AvatarDecorationData interface{} `json:"avatar_decoration_data"`
+			Avatar               string      `json:"avatar"`
+		} `json:"user"`
+		Roles                      []interface{} `json:"roles"`
+		PremiumSince               interface{}   `json:"premium_since"`
+		Pending                    bool          `json:"pending"`
+		Nick                       interface{}   `json:"nick"`
+		Mute                       bool          `json:"mute"`
+		JoinedAt                   time.Time     `json:"joined_at"`
+		Flags                      int           `json:"flags"`
+		Deaf                       bool          `json:"deaf"`
+		CommunicationDisabledUntil interface{}   `json:"communication_disabled_until"`
+		Avatar                     interface{}   `json:"avatar"`
+	} `json:"members"`
+	GuildId    string `json:"guild_id"`
+	ChunkIndex int    `json:"chunk_index"`
+	ChunkCount int    `json:"chunk_count"`
+}
 type MessageData struct {
 	Type             int                `json:"type,omitempty"`
 	Content          string             `json:"content,omitempty"`

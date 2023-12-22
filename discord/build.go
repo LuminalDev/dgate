@@ -26,7 +26,6 @@ func getLatestBuild() (string, error) {
 	}
 
 	matches := JS_FILE_REGEX.FindAllStringSubmatch(string(resp.Body()), -1)
-	fmt.Println(string(resp.Body()))
 	asset := matches[len(matches)-10][1]
 
 	req.Header.SetMethod(fasthttp.MethodGet)

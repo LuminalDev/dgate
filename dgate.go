@@ -26,6 +26,10 @@ func (client *Client) AddHandler(event string, function any) error {
 	return client.Gateway.Handlers.Add(event, function)
 }
 
+func (client *Client) GetMembers(guildId string, memberIds []string) error {
+	return client.Gateway.GetMembers(guildId, memberIds)
+}
+
 func (client *Client) Close() {
 	client.Gateway.Close()
 }

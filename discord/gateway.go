@@ -16,16 +16,16 @@ var (
 )
 
 type Gateway struct {
-	CloseChan         chan struct{}
-	Closed            bool
-	Config            *types.Config
-	Connection        *websocket.Conn
-	GatewayURL        string
-	Handlers          Handlers
-	LastSeq           int
-	Selfbot           *Selfbot
-	SessionID         string
-	
+	CloseChan  chan struct{}
+	Closed     bool
+	Config     *types.Config
+	Connection *websocket.Conn
+	GatewayURL string
+	Handlers   Handlers
+	LastSeq    int
+	Selfbot    *Selfbot
+	SessionID  string
+
 	heartbeatInterval time.Duration
 }
 
@@ -288,7 +288,6 @@ func (gateway *Gateway) readMessage() ([]byte, error) {
 	}
 
 	_, msg, err := gateway.Connection.ReadMessage()
-
 	if err != nil {
 		var closeError *websocket.CloseError
 
@@ -338,21 +337,39 @@ func (gateway *Gateway) reconnect() error {
 func (gateway *Gateway) callHandlers(msg []byte, event types.DefaultEvent) error {
 	switch event.Op {
 	case types.OpcodeDispatch:
-		var data types.MessageEvent
-
-		err := json.Unmarshal(msg, &data)
-
-		if err != nil {
-			return err
-		}
 
 		switch event.T {
 		case types.EventNameMessageCreate:
+			var data types.MessageEvent
+
+			err := json.Unmarshal(msg, &data)
+
+			if err != nil {
+				return err
+			}
 			for _, handler := range gateway.Handlers.OnMessageCreate {
 				handler(&data.D)
 			}
 		case types.EventNameMessageUpdate:
+			var data types.MessageEvent
+
+			err := json.Unmarshal(msg, &data)
+
+			if err != nil {
+				return err
+			}
 			for _, handler := range gateway.Handlers.OnMessageUpdate {
+				handler(&data.D)
+			}
+		case types.EventNameGuildMembersChunk:
+			var data types.MemberEvent
+
+			err := json.Unmarshal(msg, &data)
+
+			if err != nil {
+				return err
+			}
+			for _, handler := range gateway.Handlers.OnGuildMembersChunk {
 				handler(&data.D)
 			}
 		}
@@ -394,7 +411,6 @@ func (gateway *Gateway) startHandler() {
 			if err = json.Unmarshal(msg, &event); err != nil {
 				return // TODO: Log error with some sort of method instead of returning and ending the handler.
 			}
-
 			if err = gateway.callHandlers(msg, event); err != nil {
 				return // TODO: Log error with some sort of method instead of returning and ending the handler.
 			}
@@ -424,4 +440,17 @@ func (gateway *Gateway) Close() error {
 	gateway.Connection = nil
 
 	return nil
+}
+
+func (gateway *Gateway) GetMembers(id string, ids []string) error {
+	payload, err := json.Marshal(types.DefaultEvent{
+		Op: types.OpcodeRequestGuildMembers,
+		D:  map[string]any{"guild_id": id, "presences": true, "user_ids": ids},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return gateway.sendMessage(payload)
 }
